@@ -1,5 +1,4 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { agents } from "./agents-config.js";
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
@@ -8,7 +7,10 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { toSnakeCase } from "./utils.js";
+import { loadAgents, toolResultsToMessage, toSnakeCase } from "./utils.js";
+import { AIAgent } from "mcp-ai-agent";
+
+let agents: AIAgent[] | undefined;
 
 const MAX_STEPS = 100;
 
@@ -24,7 +26,10 @@ const AgentCallingSchema = z.object({
   prompt: z.string().describe("The prompt to send to the agent"),
 });
 
-export const createServer = () => {
+export const createServer = async () => {
+  if (!agents) {
+    agents = await loadAgents();
+  }
   const server = new Server(
     {
       name: "mcp-agent-server",
@@ -87,7 +92,7 @@ export const createServer = () => {
       const response = await agent.ai.generateResponse({
         prompt: `<Context>${context}</Context>\n<Prompt>${prompt}</Prompt>`,
         maxSteps: MAX_STEPS,
-        onStepFinish: () => {
+        onStepFinish: (response) => {
           if (progressToken !== undefined) {
             server.notification({
               method: "notifications/progress",
@@ -95,6 +100,7 @@ export const createServer = () => {
                 progress: i++,
                 total: MAX_STEPS,
                 progressToken,
+                message: toolResultsToMessage(response.toolResults),
               },
             });
           }
@@ -114,7 +120,57 @@ export const createServer = () => {
     throw new Error(`Unknown tool: ${request.params.name}`);
   });
 
-  const cleanup = async () => {};
-
-  return { server, cleanup };
+  return { server };
 };
+
+export async function testAgent(
+  agentName: string,
+  prompt: string,
+  context: string
+) {
+  if (!agents) {
+    agents = await loadAgents();
+  }
+  // Find the agent by name
+  const agent = agents.find((a) => {
+    const info = a.getInfo();
+    return toSnakeCase(info?.name) === toSnakeCase(agentName);
+  });
+
+  if (!agent) {
+    console.error(`Agent "${agentName}" not found. Available agents:`);
+    agents.forEach((a) => {
+      const info = a.getInfo();
+      console.log(`- ${info?.name}`);
+    });
+    process.exit(1);
+  }
+
+  console.log(`Testing agent: ${agent.getInfo()?.name}`);
+  console.log(`Prompt: ${prompt}`);
+  console.log(`Context: ${context || "None"}`);
+
+  try {
+    await agent.initialize();
+    const response = await agent.generateResponse({
+      prompt: `<Context>${context}</Context>\n<Prompt>${prompt}</Prompt>`,
+      maxSteps: 100,
+      onStepFinish: (response) => {
+        console.log(toolResultsToMessage(response.toolResults));
+      },
+    });
+
+    console.log("\nAgent Response:\n");
+    console.log(response.text);
+  } catch (error) {
+    console.error("Error testing agent:", error);
+    process.exit(1);
+  }
+
+  process.exit(0);
+}
+
+export async function closeAllAgents() {
+  if (!agents) return;
+  await Promise.all(agents.map((agent) => agent.close()));
+}

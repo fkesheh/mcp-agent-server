@@ -7,6 +7,7 @@ const sequentialThinkingAgent = new AIAgent({
   name: "Sequential Thinker",
   description:
     "Use this agent to think sequentially and resolve complex problems",
+  systemPrompt: "You are a sequential thinker. You think step by step.",
   toolsConfigs: [
     {
       mcpServers: {

@@ -1,11 +1,9 @@
 #!/usr/bin/env node
 
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { createServer } from "./mcp-agent-server.js";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import { agents } from "./agents-config.js";
-import { toSnakeCase } from "./utils.js";
+import { closeAllAgents, createServer, testAgent } from "./mcp-agent-server.js";
 
 interface TestAgentArgs {
   name: string;
@@ -15,62 +13,16 @@ interface TestAgentArgs {
 
 export async function startServer() {
   const transport = new StdioServerTransport();
-  const { server, cleanup } = createServer();
+  const { server } = await createServer();
 
   await server.connect(transport);
 
   // Cleanup on exit
   process.on("SIGINT", async () => {
-    await cleanup();
     await server.close();
+    await closeAllAgents();
     process.exit(0);
   });
-}
-
-export async function testAgent(
-  agentName: string,
-  prompt: string,
-  context: string
-) {
-  // Find the agent by name
-  const agent = agents.find((a) => {
-    const info = a.getInfo();
-    return toSnakeCase(info?.name) === toSnakeCase(agentName);
-  });
-
-  if (!agent) {
-    console.error(`Agent "${agentName}" not found. Available agents:`);
-    agents.forEach((a) => {
-      const info = a.getInfo();
-      console.log(`- ${info?.name}`);
-    });
-    process.exit(1);
-  }
-
-  console.log(`Testing agent: ${agent.getInfo()?.name}`);
-  console.log(`Prompt: ${prompt}`);
-  console.log(`Context: ${context || "None"}`);
-
-  try {
-    await agent.initialize();
-    const response = await agent.generateResponse({
-      prompt: `<Context>${context}</Context>\n<Prompt>${prompt}</Prompt>`,
-      maxSteps: 100,
-      onStepFinish: (response) => {
-        console.log(
-          `Step completed. Response: ${JSON.stringify(response.toolResults)}`
-        );
-      },
-    });
-
-    console.log("\nAgent Response:\n");
-    console.log(response.text);
-  } catch (error) {
-    console.error("Error testing agent:", error);
-    process.exit(1);
-  }
-
-  process.exit(0);
 }
 
 async function main() {

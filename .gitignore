@@ -1,3 +1,4 @@
 dist/
 node_modules/
-agents-config.ts
+my-agents-config.ts
+.env

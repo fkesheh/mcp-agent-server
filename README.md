@@ -59,7 +59,94 @@ This project leverages the [mcp-ai-agent](https://github.com/fkesheh/mcp-ai-agen
 
 ### Configure Your Agents
 
-Edit `agents-config.ts` to define your agents. Several example agents are included:
+You can create a personalized agents configuration file that overrides the default `agents-config.ts` by creating a file named `my-agents-config.ts` in the project root. The server automatically detects and uses this file if it exists. The file needs to export an array of agent configurations.
+
+To create your custom configuration:
+
+1. Create a new file called `my-agents-config.ts` in the project root
+2. Import the necessary dependencies:
+   ```typescript
+   import { AIAgent, Servers } from "mcp-ai-agent";
+   import { anthropic } from "@ai-sdk/anthropic";
+   // Import other AI SDKs as needed
+   ```
+3. Define your agents with their tools, models, and configurations
+4. Export an `agents` array containing all your agent configurations
+
+Here's an example of a custom agents configuration with specialized tools and Claude models:
+
+```typescript
+// my-agents-config.ts
+import { AIAgent, Servers } from "mcp-ai-agent";
+import { anthropic } from "@ai-sdk/anthropic";
+
+// Choose the Claude model you want to use
+const model = anthropic("claude-3-5-haiku-20241022");
+// const model = anthropic("claude-3-7-sonnet-20250219"); // Uncomment for a more powerful model
+
+// Code Context Agent
+const codeContextAgent = new AIAgent({
+  name: "Code Context Agent",
+  description: "Use this agent to analyze and understand code in your projects",
+  toolsConfigs: [
+    Servers.sequentialThinking,
+    {
+      mcpServers: {
+        codeContext: {
+          command: "node",
+          args: ["/path/to/code-context-mcp/dist/index.js"],
+        },
+      },
+    },
+  ],
+  model,
+});
+
+// Web Search Agent
+const webSearchAgent = new AIAgent({
+  name: "Web Search Agent",
+  description: "Use this agent to search the web",
+  systemPrompt: "Prefer to use brave search to search the web for information.",
+  toolsConfigs: [Servers.sequentialThinking, Servers.braveSearch],
+  model,
+});
+
+// Master Agent that can manage other agents
+const masterAgent = new AIAgent({
+  name: "Master Agent",
+  description: "An agent that can manage other specialized agents",
+  model,
+  toolsConfigs: [
+    { type: "agent", agent: codeContextAgent },
+    { type: "agent", agent: webSearchAgent },
+    // Add more agents as needed
+  ],
+});
+
+// Export the agents array
+export const agents: AIAgent[] = [
+  codeContextAgent,
+  webSearchAgent,
+  masterAgent,
+];
+```
+
+You can include as many specialized agents as needed, such as:
+
+- Code analysis agents
+- Development environment agents
+- Knowledge base agents (Obsidian, etc.)
+- Project management agents (Jira, etc.)
+- Google Drive/Workspace agents
+- Web search agents
+- Design tool agents (Figma, etc.)
+
+> **Important**: After creating or updating your custom configuration, remember to:
+>
+> 1. Run `npm run build` to rebuild the project
+> 2. Restart your MCP client to apply changes
+
+You can use `agents-config.ts` as a reference for creating your custom configuration. The default configuration includes:
 
 1. **Sequential Thinking Agent**: For complex problem solving
 2. **Brave Search Agent**: For web searching
