@@ -8,6 +8,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
+import { toSnakeCase } from "./utils.js";
 
 const MAX_STEPS = 100;
 
@@ -35,11 +36,6 @@ export const createServer = () => {
       },
     }
   );
-
-  function toSnakeCase(str?: string) {
-    if (!str) return Math.random().toString(36).substring(2, 15);
-    return str.toLowerCase().replace(/ /g, "_");
-  }
 
   const availableAgents = agents.map((agent) => {
     const info = agent.getInfo();

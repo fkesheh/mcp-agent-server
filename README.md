@@ -227,6 +227,51 @@ The mcp-ai-agent framework supports various MCP servers:
 2. Rebuild with `npm run build`
 3. Restart your MCP client to load the changes
 
+## CLI Usage
+
+MCP Agent Server comes with a command-line interface (CLI) for working with agents.
+
+### Testing Agents
+
+You can test individual agents directly from the command line without connecting to an MCP client, this is helpful for debuging purposes.
+
+```bash
+npm run test-agent -- --name="Agent Name" --prompt="Your test prompt" --context="Optional context"
+```
+
+For example, to test the Brave Search Agent:
+
+```bash
+npm run test-agent -- --name="Brave Search" --prompt="What is the capital of France?" --context="I need geographical information"
+```
+
+You can also run the command directly:
+
+```bash
+node dist/index.js test-agent --name="Sequential Thinker" --prompt="How would I approach solving a complex math problem?"
+```
+
+Or test the Master Agent which combines multiple specialized agents:
+
+```bash
+node dist/index.js test-agent --name="Master Agent" --prompt="Store this information: Claude is an AI assistant by Anthropic" --context="I need to test the memory capabilities"
+```
+
+The test command will:
+
+1. Find the specified agent by name
+2. Initialize the agent
+3. Send your prompt and context
+4. Display the agent's response
+
+This is useful for:
+
+- Testing new agent configurations
+- Debugging agent issues
+- Verifying agent functionality before connecting to an MCP client
+
+The test command will list all available agents if you provide an invalid agent name.
+
 ## License
 
 This project is licensed under the MIT License.
