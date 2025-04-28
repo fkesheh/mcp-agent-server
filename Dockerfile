@@ -1,6 +1,6 @@
 FROM node:22.12-alpine AS builder
 
-COPY src/everything /app
+COPY src/mcp-agent-server /app
 COPY tsconfig.json /tsconfig.json
 
 WORKDIR /app
