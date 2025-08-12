@@ -1,4 +1,4 @@
-import { ToolResult } from "ai";
+import { ToolSet, TypedToolResult } from "ai";
 
 export function toSnakeCase(str?: string) {
   if (!str) return Math.random().toString(36).substring(2, 15);
@@ -24,16 +24,16 @@ export const loadAgents = async () => {
 };
 
 export const toolResultsToMessage = (
-  toolResults: ToolResult<string, any, any>[]
+  toolResults: Array<TypedToolResult<ToolSet>>
 ) => {
   return toolResults
-    .map((toolResult: ToolResult<string, any, any>) => {
+    .map((toolResult: TypedToolResult<ToolSet>) => {
       return (
         toolResult.toolName +
         "(" +
-        JSON.stringify(toolResult.args) +
+        JSON.stringify(toolResult.input) +
         "): \n" +
-        toolResult.result?.content?.[0]?.text?.slice(0, 200) +
+        toolResult.output?.content?.[0]?.text?.slice(0, 200) +
         "..."
       );
     })

@@ -2,3 +2,4 @@ dist/
 node_modules/
 my-agents-config.ts
 .env
+.DS_Store

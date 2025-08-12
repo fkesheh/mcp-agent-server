@@ -6,7 +6,6 @@ import {
   ToolSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
 import { loadAgents, toolResultsToMessage, toSnakeCase } from "./utils.js";
 import { AIAgent } from "mcp-ai-agent";
 
@@ -60,7 +59,7 @@ export const createServer = async () => {
     const tools: Tool[] = availableAgents.map((agent) => ({
       name: agent.name,
       description: agent.description,
-      inputSchema: zodToJsonSchema(AgentCallingSchema) as ToolInput,
+      inputSchema: z.toJSONSchema(AgentCallingSchema) as any,
     }));
     return { tools };
   });
