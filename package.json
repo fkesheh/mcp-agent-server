@@ -1,6 +1,6 @@
 {
   "name": "mcp-agent-server",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "MCP server that provides agents as MCP tools",
   "license": "MIT",
   "author": "Foad M. K. (https://github.com/foadmk)",
