@@ -1,25 +1,171 @@
 import { ToolSet, TypedToolResult } from "ai";
+import { AIAgent, Servers } from "mcp-ai-agent";
+import { openai } from "@ai-sdk/openai";
+import { anthropic } from "@ai-sdk/anthropic";
+import { z } from "zod";
+import fs from "fs/promises";
+import path from "path";
+import {
+  JSONAgentsConfig,
+  AgentConfig,
+  ModelConfig,
+  ToolsConfig,
+} from "./types.js";
 
 export function toSnakeCase(str?: string) {
   if (!str) return Math.random().toString(36).substring(2, 15);
   return str.toLowerCase().replace(/ /g, "_");
 }
 
-export const loadAgents = async () => {
-  try {
-    // @ts-ignore
-    const agents = (await import("./my-agents-config.js"))?.agents as AIAgent[];
-    if (!agents) {
-      throw new Error("No agents found in my-agents-config.js");
+function createModel(modelConfig: ModelConfig) {
+  switch (modelConfig.provider) {
+    case "openai":
+      return openai(modelConfig.model);
+    case "anthropic":
+      return anthropic(modelConfig.model);
+    default:
+      throw new Error(`Unsupported model provider: ${modelConfig.provider}`);
+  }
+}
+
+function mapPrebuiltServer(prebuiltName: string) {
+  switch (prebuiltName) {
+    case "sequentialThinking":
+      return Servers.sequentialThinking;
+    case "memory":
+      return Servers.memory;
+    case "braveSearch":
+      return Servers.braveSearch;
+    case "firecrawlMcp":
+      return Servers.firecrawlMcp;
+    case "fetch":
+      return Servers.fetch;
+    case "awsKbRetrieval":
+      return Servers.awsKbRetrieval;
+    case "everart":
+      return Servers.everart;
+    case "fileSystem":
+      return Servers.fileSystem;
+    case "sqlite":
+      return Servers.sqlite;
+    default:
+      throw new Error(`Unknown prebuilt server: ${prebuiltName}`);
+  }
+}
+
+function convertToolsConfig(
+  toolConfig: ToolsConfig,
+  allAgents: AIAgent[]
+): any {
+  if (toolConfig.prebuilt) {
+    return mapPrebuiltServer(toolConfig.prebuilt);
+  }
+
+  if (toolConfig.mcpServers) {
+    return { mcpServers: toolConfig.mcpServers };
+  }
+
+  if (toolConfig.agentRef) {
+    const referencedAgent = allAgents.find(
+      (agent) => agent.getInfo()?.name === toolConfig.agentRef
+    );
+    if (!referencedAgent) {
+      throw new Error(`Referenced agent not found: ${toolConfig.agentRef}`);
     }
+    return { type: "agent", agent: referencedAgent };
+  }
+
+  throw new Error(`Invalid tool configuration: ${JSON.stringify(toolConfig)}`);
+}
+
+async function createAgentFromConfig(
+  agentConfig: AgentConfig,
+  allAgents: AIAgent[]
+): Promise<AIAgent> {
+  const model = createModel(agentConfig.model);
+
+  const toolsConfigs = agentConfig.toolsConfigs.map((toolConfig) =>
+    convertToolsConfig(toolConfig, allAgents)
+  );
+
+  const agent = new AIAgent({
+    name: agentConfig.name,
+    description: agentConfig.description,
+    systemPrompt: agentConfig.systemPrompt,
+    model,
+    toolsConfigs,
+  });
+
+  // Store the original config for access to expose flag
+  (agent as any)._config = agentConfig;
+
+  return agent;
+}
+
+export const loadAgents = async (configPath?: string): Promise<AIAgent[]> => {
+  const defaultPaths = ["agents-config.json", "my-agents-config.json"];
+
+  let configFilePath = configPath;
+
+  if (!configFilePath) {
+    for (const defaultPath of defaultPaths) {
+      try {
+        await fs.access(defaultPath);
+        configFilePath = defaultPath;
+        break;
+      } catch {
+        // File doesn't exist, try next
+      }
+    }
+  }
+
+  if (!configFilePath) {
+    throw new Error(
+      `No configuration file found. Tried: ${defaultPaths.join(", ")}`
+    );
+  }
+
+  try {
+    const configContent = await fs.readFile(configFilePath, "utf-8");
+    const config: JSONAgentsConfig = JSON.parse(configContent);
+
+    if (!config.agents || !Array.isArray(config.agents)) {
+      throw new Error("Invalid configuration: 'agents' array not found");
+    }
+
+    // Create agents (we need to do this in the right order for agent references)
+    const agents: AIAgent[] = [];
+    const agentMap = new Map<string, AIAgent>();
+
+    // First pass: create agents without agent references
+    for (const agentConfig of config.agents) {
+      const hasAgentRef = agentConfig.toolsConfigs.some(
+        (tool) => tool.agentRef
+      );
+      if (!hasAgentRef) {
+        const agent = await createAgentFromConfig(agentConfig, agents);
+        agents.push(agent);
+        agentMap.set(agentConfig.name, agent);
+      }
+    }
+
+    // Second pass: create agents with agent references
+    for (const agentConfig of config.agents) {
+      const hasAgentRef = agentConfig.toolsConfigs.some(
+        (tool) => tool.agentRef
+      );
+      if (hasAgentRef) {
+        const agent = await createAgentFromConfig(agentConfig, agents);
+        agents.push(agent);
+        agentMap.set(agentConfig.name, agent);
+      }
+    }
+
     return agents;
   } catch (error) {
-    // @ts-ignore
-    const agents = (await import("./agents-config.js"))?.agents as AIAgent[];
-    if (!agents) {
-      throw new Error("No agents found in agents-config.js");
-    }
-    return agents;
+    throw new Error(
+      `Failed to load configuration from ${configFilePath}: ${error}`
+    );
   }
 };
 

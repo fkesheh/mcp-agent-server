@@ -1,25 +1,52 @@
 {
   "name": "mcp-agent-server",
   "version": "1.0.0",
-  "description": "MCP server that provides agents as MCP tools",
+  "description": "A Model Context Protocol (MCP) server that provides AI agents as tools for seamless integration with MCP clients",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ai-agents",
+    "anthropic",
+    "openai",
+    "claude",
+    "gpt",
+    "tools",
+    "automation",
+    "chatbot",
+    "llm"
+  ],
   "license": "MIT",
   "author": "Foad M. K. (https://github.com/foadmk)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/foadmk/mcp-agent-server.git"
+  },
   "homepage": "https://github.com/foadmk/mcp-agent-server",
   "bugs": "https://github.com/foadmk/mcp-agent-server/issues",
   "type": "module",
+  "main": "dist/index.js",
+  "engines": {
+    "node": ">=16.0.0"
+  },
   "bin": {
-    "mcp-agent-server": "dist/index.js"
+    "mcp-agent-server": "dist/cli.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "agents-config.json",
+    "example-config.json",
+    "example-selective-expose.json",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "rm -rf dist && tsc && shx chmod +x dist/*.js",
     "prepare": "npm run build",
+    "prepublishOnly": "npm run build",
     "watch": "tsc --watch",
-    "start": "node dist/index.js serve",
-    "start:sse": "node dist/sse.js",
-    "test-agent": "npm run build && node dist/cli.js test-agent"
+    "start": "node dist/index.js",
+    "serve": "node dist/cli.js serve",
+    "test-agent": "node dist/cli.js test-agent"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.1",

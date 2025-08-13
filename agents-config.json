@@ -1,0 +1,84 @@
+{
+    "version": "1.0.0",
+    "agents": [
+        {
+            "name": "Sequential Thinker",
+            "description": "Use this agent to think sequentially and resolve complex problems",
+            "systemPrompt": "You are a sequential thinker. You think step by step.",
+            "model": {
+                "provider": "openai",
+                "model": "gpt-4o-mini"
+            },
+            "toolsConfigs": [
+                {
+                    "mcpServers": {
+                        "sequentialThinking": {
+                            "command": "npx",
+                            "args": [
+                                "-y",
+                                "@modelcontextprotocol/server-sequential-thinking"
+                            ]
+                        }
+                    }
+                }
+            ],
+            "expose": false
+        },
+        {
+            "name": "Brave Search",
+            "description": "Use this agent to search the web for the latest information",
+            "model": {
+                "provider": "openai",
+                "model": "gpt-4o-mini"
+            },
+            "toolsConfigs": [
+                {
+                    "prebuilt": "braveSearch"
+                }
+            ],
+            "expose": false
+        },
+        {
+            "name": "Memory Agent",
+            "description": "Use this agent to store and retrieve memories. Pass a full prompt to the agent with all the context it will need to store and retrieve memories.",
+            "systemPrompt": "If the use asks to store something use the create_entities tool. If the user asks to retrieve something use the read_graph tool.",
+            "model": {
+                "provider": "openai",
+                "model": "gpt-4o-mini"
+            },
+            "toolsConfigs": [
+                {
+                    "mcpServers": {
+                        "memory": {
+                            "command": "npx",
+                            "args": [
+                                "-y",
+                                "@modelcontextprotocol/server-memory"
+                            ]
+                        }
+                    }
+                }
+            ],
+            "expose": false
+        },
+        {
+            "name": "Master Agent",
+            "description": "An agent that can manage other agents",
+            "model": {
+                "provider": "openai",
+                "model": "gpt-4o-mini"
+            },
+            "toolsConfigs": [
+                {
+                    "agentRef": "Sequential Thinker"
+                },
+                {
+                    "agentRef": "Memory Agent"
+                },
+                {
+                    "agentRef": "Brave Search"
+                }
+            ]
+        }
+    ]
+}

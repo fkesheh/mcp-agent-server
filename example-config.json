@@ -1,0 +1,51 @@
+{
+  "version": "1.0.0",
+  "agents": [
+    {
+      "name": "Sequential Thinker",
+      "description": "Use this agent to think sequentially and resolve complex problems",
+      "systemPrompt": "You are a sequential thinker. You think step by step.",
+      "model": {
+        "provider": "openai",
+        "model": "gpt-4o-mini"
+      },
+      "toolsConfigs": [
+        {
+          "prebuilt": "sequentialThinking"
+        }
+      ]
+    },
+    {
+      "name": "Web Search Agent",
+      "description": "Use this agent to search the web for the latest information",
+      "model": {
+        "provider": "openai",
+        "model": "gpt-4o-mini"
+      },
+      "toolsConfigs": [
+        {
+          "prebuilt": "braveSearch"
+        }
+      ]
+    },
+    {
+      "name": "Assistant",
+      "description": "A helpful AI assistant with multiple capabilities",
+      "model": {
+        "provider": "anthropic",
+        "model": "claude-3-5-haiku-20241022"
+      },
+      "toolsConfigs": [
+        {
+          "prebuilt": "sequentialThinking"
+        },
+        {
+          "prebuilt": "memory"
+        },
+        {
+          "agentRef": "Web Search Agent"
+        }
+      ]
+    }
+  ]
+}

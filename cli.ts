@@ -9,11 +9,12 @@ interface TestAgentArgs {
   name: string;
   prompt: string;
   context: string;
+  config?: string;
 }
 
-export async function startServer() {
+export async function startServer(configPath?: string) {
   const transport = new StdioServerTransport();
-  const { server } = await createServer();
+  const { server } = await createServer(configPath);
 
   await server.connect(transport);
 
@@ -27,8 +28,13 @@ export async function startServer() {
 
 async function main() {
   const argv = yargs(hideBin(process.argv))
-    .command("serve", "Start the MCP agent server", {}, () => {
-      startServer();
+    .option("config", {
+      alias: "c",
+      description: "Path to JSON configuration file",
+      type: "string",
+    })
+    .command(["serve", "$0"], "Start the MCP agent server", {}, (argv) => {
+      startServer(argv.config as string | undefined);
     })
     .command(
       "test-agent",
@@ -51,11 +57,10 @@ async function main() {
         },
       },
       async (argv: TestAgentArgs) => {
-        await testAgent(argv.name, argv.prompt, argv.context);
+        await testAgent(argv.name, argv.prompt, argv.context, argv.config);
       }
     )
     .help()
-    .demandCommand(1, "You need to specify a command")
     .parse();
 
   return argv;

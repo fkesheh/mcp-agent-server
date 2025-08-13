@@ -29,6 +29,34 @@ This project leverages the [mcp-ai-agent](https://github.com/fkesheh/mcp-ai-agen
 
 ## Installation
 
+### Option 1: Using npx (Recommended)
+
+You can run MCP Agent Server directly using npx without installation:
+
+```bash
+# Start the server with default configuration
+npx mcp-agent-server
+
+# Start with custom configuration
+npx mcp-agent-server --config my-config.json
+
+# Test an agent
+npx mcp-agent-server test-agent --name "Sequential Thinker" --prompt "What is 2+2?"
+```
+
+### Option 2: Global Installation
+
+Install globally to use the `mcp-agent-server` command anywhere:
+
+```bash
+npm install -g mcp-agent-server
+
+# Then use it
+mcp-agent-server --config my-config.json
+```
+
+### Option 3: Local Development
+
 1. Clone the repository:
 
    ```bash
@@ -48,87 +76,174 @@ This project leverages the [mcp-ai-agent](https://github.com/fkesheh/mcp-ai-agen
    npm run build
    ```
 
-4. Get the full path to the generated `dist/index.js` file:
-   ```bash
-   pwd
-   # Example output: /Users/username/Projects/mcp-agent-server
-   # Full path would be: /Users/username/Projects/mcp-agent-server/dist/index.js
-   ```
-
 ## Configuration
 
 ### Configure Your Agents
 
-You can create a personalized agents configuration file that overrides the default `agents-config.ts` by creating a file named `my-agents-config.ts` in the project root. The server automatically detects and uses this file if it exists. The file needs to export an array of agent configurations.
+The MCP Agent Server now uses JSON-based configuration for easier management and deployment. You can create a personalized agents configuration file named `my-agents-config.json` in the project root. The server automatically detects and uses this file if it exists.
 
 To create your custom configuration:
 
-1. Create a new file called `my-agents-config.ts` in the project root
-2. Import the necessary dependencies:
-   ```typescript
-   import { AIAgent, Servers } from "mcp-ai-agent";
-   import { anthropic } from "@ai-sdk/anthropic";
-   // Import other AI SDKs as needed
-   ```
-3. Define your agents with their tools, models, and configurations
-4. Export an `agents` array containing all your agent configurations
+1. Create a new file called `my-agents-config.json` in the project root
+2. Define your agents with their tools, models, and configurations using JSON format
+3. The server will automatically load and use your configuration
 
-Here's an example of a custom agents configuration with specialized tools and Claude models:
+### JSON Configuration Schema
 
-```typescript
-// my-agents-config.ts
-import { AIAgent, Servers } from "mcp-ai-agent";
-import { anthropic } from "@ai-sdk/anthropic";
+Here's an example of a custom agents configuration:
 
-// Choose the Claude model you want to use
-const model = anthropic("claude-3-5-haiku-20241022");
-// const model = anthropic("claude-3-7-sonnet-20250219"); // Uncomment for a more powerful model
-
-// Code Context Agent
-const codeContextAgent = new AIAgent({
-  name: "Code Context Agent",
-  description: "Use this agent to analyze and understand code in your projects",
-  toolsConfigs: [
-    Servers.sequentialThinking,
+```json
+{
+  "version": "1.0.0",
+  "agents": [
     {
-      mcpServers: {
-        codeContext: {
-          command: "node",
-          args: ["/path/to/code-context-mcp/dist/index.js"],
-        },
+      "name": "Code Context Agent",
+      "description": "Use this agent to analyze and understand code in your projects",
+      "model": {
+        "provider": "anthropic",
+        "model": "claude-3-5-haiku-20241022"
       },
+      "toolsConfigs": [
+        {
+          "prebuilt": "sequentialThinking"
+        },
+        {
+          "mcpServers": {
+            "codeContext": {
+              "command": "node",
+              "args": ["/path/to/code-context-mcp/dist/index.js"]
+            }
+          }
+        }
+      ]
     },
-  ],
-  model,
-});
+    {
+      "name": "Web Search Agent",
+      "description": "Use this agent to search the web",
+      "systemPrompt": "Prefer to use brave search to search the web for information.",
+      "model": {
+        "provider": "anthropic",
+        "model": "claude-3-5-haiku-20241022"
+      },
+      "toolsConfigs": [
+        {
+          "prebuilt": "sequentialThinking"
+        },
+        {
+          "prebuilt": "braveSearch"
+        }
+      ]
+    },
+    {
+      "name": "Master Agent",
+      "description": "An agent that can manage other agents",
+      "model": {
+        "provider": "openai",
+        "model": "gpt-4o-mini"
+      },
+      "toolsConfigs": [
+        {
+          "agentRef": "Code Context Agent"
+        },
+        {
+          "agentRef": "Web Search Agent"
+        }
+      ]
+    }
+  ]
+}
+```
 
-// Web Search Agent
-const webSearchAgent = new AIAgent({
-  name: "Web Search Agent",
-  description: "Use this agent to search the web",
-  systemPrompt: "Prefer to use brave search to search the web for information.",
-  toolsConfigs: [Servers.sequentialThinking, Servers.braveSearch],
-  model,
-});
+### Configuration Options
 
-// Master Agent that can manage other agents
-const masterAgent = new AIAgent({
-  name: "Master Agent",
-  description: "An agent that can manage other specialized agents",
-  model,
-  toolsConfigs: [
-    { type: "agent", agent: codeContextAgent },
-    { type: "agent", agent: webSearchAgent },
-    // Add more agents as needed
-  ],
-});
+#### Model Configuration
 
-// Export the agents array
-export const agents: AIAgent[] = [
-  codeContextAgent,
-  webSearchAgent,
-  masterAgent,
-];
+- **provider**: `"openai"` | `"anthropic"` | `"google"` | `"mistral"` | `"groq"`
+- **model**: The specific model name (e.g., `"gpt-4o-mini"`, `"claude-3-5-haiku-20241022"`)
+
+#### Tools Configuration Types
+
+1. **Prebuilt Servers** (recommended):
+
+   ```json
+   {
+     "prebuilt": "sequentialThinking"
+   }
+   ```
+
+   Available prebuilt servers: `sequentialThinking`, `memory`, `braveSearch`, `firecrawlMcp`, `fetch`, `awsKbRetrieval`, `everart`, `fileSystem`, `sqlite`
+
+2. **Custom MCP Servers**:
+
+   ```json
+   {
+     "mcpServers": {
+       "serverName": {
+         "command": "node",
+         "args": ["/path/to/server.js"],
+         "env": {
+           "API_KEY": "your-api-key"
+         }
+       }
+     }
+   }
+   ```
+
+3. **Agent References** (for master agents):
+
+   ```json
+   {
+     "agentRef": "Other Agent Name"
+   }
+   ```
+
+### Selective Agent Exposure
+
+You can control which agents are exposed to MCP clients using the `expose` boolean field on each agent. This is useful when you want to have helper agents that are only used internally by other agents:
+
+```json
+{
+  "version": "1.0.0",
+  "agents": [
+    {
+      "name": "Web Search Helper",
+      "description": "Internal web search capabilities",
+      "model": { "provider": "openai", "model": "gpt-4o-mini" },
+      "toolsConfigs": [{ "prebuilt": "braveSearch" }],
+      "expose": false
+    },
+    {
+      "name": "Master Assistant",
+      "description": "Public-facing assistant with web search",
+      "model": {
+        "provider": "anthropic",
+        "model": "claude-3-5-haiku-20241022"
+      },
+      "toolsConfigs": [
+        { "prebuilt": "sequentialThinking" },
+        { "agentRef": "Web Search Helper" }
+      ],
+      "expose": true
+    }
+  ]
+}
+```
+
+- **`expose: true`** (default): Agent is available as a tool in MCP clients
+- **`expose: false`**: Agent is only available internally to other agents
+
+### Specifying Configuration File
+
+You can specify a custom configuration file using the `--config` argument:
+
+```bash
+# Using CLI
+npm run test-agent -- --config="path/to/config.json" --name="Agent Name" --prompt="Test prompt"
+
+# When starting the server (multiple formats supported)
+node dist/index.js --config=path/to/config.json
+node dist/index.js -c path/to/config.json
+node dist/index.js --config path/to/config.json
 ```
 
 You can include as many specialized agents as needed, such as:
@@ -146,13 +261,14 @@ You can include as many specialized agents as needed, such as:
 > 1. Run `npm run build` to rebuild the project
 > 2. Restart your MCP client to apply changes
 
-You can use `agents-config.ts` as a reference for creating your custom configuration. The default configuration includes:
+### Default Configuration
+
+The server comes with a default `agents-config.json` that includes:
 
 1. **Sequential Thinking Agent**: For complex problem solving
 2. **Brave Search Agent**: For web searching
 3. **Memory Agent**: For storing and retrieving information
 4. **Master Agent**: Combines multiple agents
-5. **Calculator Agent**: Provides basic calculation tools
 
 > **Important**: After making changes to your agent configurations, remember to:
 >
@@ -233,12 +349,44 @@ Add the MCP Agent Server to your MCP client configuration:
 
 Edit your `claude_desktop_config.json`:
 
+#### Using npx (Recommended)
+
+```json
+{
+  "mcpServers": {
+    "mcp-agent-server": {
+      "command": "npx",
+      "args": ["mcp-agent-server", "--config", "/path/to/your/config.json"]
+    }
+  }
+}
+```
+
+#### Using Global Installation
+
+```json
+{
+  "mcpServers": {
+    "mcp-agent-server": {
+      "command": "mcp-agent-server",
+      "args": ["--config", "/path/to/your/config.json"]
+    }
+  }
+}
+```
+
+#### Using Local Build
+
 ```json
 {
   "mcpServers": {
     "mcp-agent-server": {
       "command": "node",
-      "args": ["/full/path/to/mcp-agent-server/dist/index.js"]
+      "args": [
+        "/full/path/to/mcp-agent-server/dist/index.js",
+        "--config",
+        "/path/to/your/config.json"
+      ]
     }
   }
 }
@@ -320,28 +468,36 @@ MCP Agent Server comes with a command-line interface (CLI) for working with agen
 
 ### Testing Agents
 
-You can test individual agents directly from the command line without connecting to an MCP client, this is helpful for debuging purposes.
+You can test individual agents directly from the command line without connecting to an MCP client, this is helpful for debugging purposes.
+
+#### Using npx (Recommended)
 
 ```bash
-npm run test-agent -- --name="Agent Name" --prompt="Your test prompt" --context="Optional context"
+npx mcp-agent-server test-agent --name="Agent Name" --prompt="Your test prompt" --context="Optional context"
 ```
 
 For example, to test the Brave Search Agent:
 
 ```bash
-npm run test-agent -- --name="Brave Search" --prompt="What is the capital of France?" --context="I need geographical information"
-```
-
-You can also run the command directly:
-
-```bash
-node dist/index.js test-agent --name="Sequential Thinker" --prompt="How would I approach solving a complex math problem?"
+npx mcp-agent-server test-agent --name="Brave Search" --prompt="What is the capital of France?" --context="I need geographical information"
 ```
 
 Or test the Master Agent which combines multiple specialized agents:
 
 ```bash
-node dist/index.js test-agent --name="Master Agent" --prompt="Store this information: Claude is an AI assistant by Anthropic" --context="I need to test the memory capabilities"
+npx mcp-agent-server test-agent --name="Master Agent" --prompt="Store this information: Claude is an AI assistant by Anthropic" --context="I need to test the memory capabilities"
+```
+
+#### Using Local Development
+
+```bash
+npm run test-agent -- --name="Agent Name" --prompt="Your test prompt" --context="Optional context"
+```
+
+Or run the command directly:
+
+```bash
+node dist/cli.js test-agent --name="Sequential Thinker" --prompt="How would I approach solving a complex math problem?"
 ```
 
 The test command will:

@@ -3,7 +3,6 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
   Tool,
-  ToolSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { loadAgents, toolResultsToMessage, toSnakeCase } from "./utils.js";
@@ -12,9 +11,6 @@ import { AIAgent } from "mcp-ai-agent";
 let agents: AIAgent[] | undefined;
 
 const MAX_STEPS = 100;
-
-const ToolInputSchema = ToolSchema.shape.inputSchema;
-type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const AgentCallingSchema = z.object({
   context: z
@@ -25,14 +21,14 @@ const AgentCallingSchema = z.object({
   prompt: z.string().describe("The prompt to send to the agent"),
 });
 
-export const createServer = async () => {
+export const createServer = async (configPath?: string) => {
   if (!agents) {
-    agents = await loadAgents();
+    agents = await loadAgents(configPath);
   }
   const server = new Server(
     {
       name: "mcp-agent-server",
-      version: "0.0.1",
+      version: "1.0.0",
     },
     {
       capabilities: {
@@ -41,17 +37,23 @@ export const createServer = async () => {
     }
   );
 
-  const availableAgents = agents.map((agent) => {
-    const info = agent.getInfo();
-    if (!info) {
-      throw new Error("Agent info not found");
-    }
-    return {
-      ...info,
-      name: "agent_" + toSnakeCase(info.name),
-      ai: agent,
-    };
-  });
+  const availableAgents = agents
+    .filter((agent) => {
+      // Only include agents that are explicitly set to expose (default: true)
+      const agentData = (agent as any)._config;
+      return agentData?.expose !== false;
+    })
+    .map((agent) => {
+      const info = agent.getInfo();
+      if (!info) {
+        throw new Error("Agent info not found");
+      }
+      return {
+        ...info,
+        name: "agent_" + toSnakeCase(info.name),
+        ai: agent,
+      };
+    });
 
   const agentArray = availableAgents.map((agent) => agent.name);
 
@@ -125,10 +127,11 @@ export const createServer = async () => {
 export async function testAgent(
   agentName: string,
   prompt: string,
-  context: string
+  context: string,
+  configPath?: string
 ) {
   if (!agents) {
-    agents = await loadAgents();
+    agents = await loadAgents(configPath);
   }
   // Find the agent by name
   const agent = agents.find((a) => {
