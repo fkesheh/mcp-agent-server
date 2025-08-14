@@ -1,0 +1,95 @@
+{
+    "version": "1.0.0",
+    "agents": [
+        {
+            "name": "Imported Sequential Thinker",
+            "description": "A sequential thinking agent imported from mcp-ai-agent-example",
+            "model": {
+                "provider": "openai",
+                "model": "gpt-4o-mini"
+            },
+            "toolsConfigs": [
+                {
+                    "type": "import",
+                    "importPath": "/Users/foadmk/Projects/mcp_servers/mcp-ai-agent-example/dist/exportable-agent.js",
+                    "exportName": "sequentialThinkingAgent"
+                }
+            ]
+        },
+        {
+            "name": "Custom Research Agent",
+            "description": "A customized research agent with specific configuration",
+            "model": {
+                "provider": "anthropic",
+                "model": "claude-3-5-haiku-20241022"
+            },
+            "toolsConfigs": [
+                {
+                    "type": "import",
+                    "importPath": "/Users/foadmk/Projects/mcp_servers/mcp-ai-agent-example/dist/exportable-agent.js",
+                    "exportName": "createResearchAgent",
+                    "factoryArgs": {
+                        "modelProvider": "anthropic",
+                        "modelName": "claude-3-5-haiku-20241022",
+                        "includeMemory": true
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Advanced Analysis Agent",
+            "description": "An advanced analysis agent for financial research",
+            "model": {
+                "provider": "openai",
+                "model": "gpt-4o"
+            },
+            "toolsConfigs": [
+                {
+                    "type": "import",
+                    "importPath": "/Users/foadmk/Projects/mcp_servers/mcp-ai-agent-example/dist/exportable-agent.js",
+                    "exportName": "createAdvancedAnalysisAgent",
+                    "factoryArgs": {
+                        "analysisType": "financial",
+                        "enablePersistence": true
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Default Versatile Agent",
+            "description": "A versatile agent using the default export",
+            "model": {
+                "provider": "openai",
+                "model": "gpt-4o-mini"
+            },
+            "toolsConfigs": [
+                {
+                    "type": "import",
+                    "importPath": "/Users/foadmk/Projects/mcp_servers/mcp-ai-agent-example/dist/exportable-agent.js"
+                }
+            ]
+        },
+        {
+            "name": "Master Agent",
+            "description": "An agent that coordinates all imported agents",
+            "model": {
+                "provider": "openai",
+                "model": "gpt-4o"
+            },
+            "toolsConfigs": [
+                {
+                    "agentRef": "Imported Sequential Thinker"
+                },
+                {
+                    "agentRef": "Custom Research Agent"
+                },
+                {
+                    "agentRef": "Advanced Analysis Agent"
+                },
+                {
+                    "prebuilt": "sequentialThinking"
+                }
+            ]
+        }
+    ]
+}

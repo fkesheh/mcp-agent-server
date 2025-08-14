@@ -215,6 +215,27 @@ Here's an example of a custom agents configuration:
    }
    ```
 
+4. **Imported Agents** (for using external agent files):
+
+   ```json
+   {
+     "type": "import",
+     "importPath": "/path/to/your/agent-file.js",
+     "exportName": "createResearchAgent",
+     "factoryArgs": {
+       "modelProvider": "anthropic",
+       "modelName": "claude-3-5-haiku-20241022",
+       "includeMemory": true
+     }
+   }
+   ```
+
+   This allows you to import agents from TypeScript/JavaScript files created with the `mcp-ai-agent` library. The imported file can export:
+
+   - A pre-configured agent instance
+   - A factory function that creates an agent (with optional arguments)
+   - An async factory function for complex initialization
+
 ### Selective Agent Exposure
 
 You can control which agents are exposed to MCP clients using the `expose` boolean field on each agent. This is useful when you want to have helper agents that are only used internally by other agents:
@@ -496,6 +517,43 @@ For custom functionality, you have several options:
   ]
 }
 ```
+
+### Importing External Agents
+
+You can import agents from external files. See example: [@fkesheh/mcp-ai-agent-example/exportable-agent.ts](https://github.com/fkesheh/mcp-ai-agent-example/blob/main/src/exportable-agent.ts)
+
+#### 1. Create Agent File
+
+```typescript
+// my-agent.ts
+import { AIAgent, Servers } from "mcp-ai-agent";
+import { openai } from "@ai-sdk/openai";
+
+export const myAgent = new AIAgent({
+  name: "My Custom Agent",
+  description: "A custom agent",
+  model: openai("gpt-4o-mini"),
+  toolsConfigs: [Servers.sequentialThinking],
+});
+```
+
+#### 2. Build to JavaScript
+
+```bash
+npx tsc  # Creates my-agent.js in dist/ folder
+```
+
+#### 3. Use in Configuration
+
+```json
+{
+  "type": "import",
+  "importPath": "/full/path/to/dist/my-agent.js",
+  "exportName": "myAgent"
+}
+```
+
+**Important**: Always use absolute paths to compiled `.js` files.
 
 ### Using MCP Servers
 

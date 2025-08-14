@@ -98,10 +98,54 @@ function mapPrebuiltServer(prebuiltName: string) {
   }
 }
 
-function convertToolsConfig(
+async function loadExternalAgent(toolConfig: ToolsConfig): Promise<any> {
+  if (!toolConfig.importPath) {
+    throw new Error("Import path is required for import type");
+  }
+
+  try {
+    // Resolve the import path (handle relative paths)
+    const importPath = path.resolve(toolConfig.importPath);
+
+    // Dynamic import the module
+    const module = await import(importPath);
+
+    // Get the export (default or named)
+    const exportName = toolConfig.exportName || "default";
+    const exported = module[exportName];
+
+    if (!exported) {
+      throw new Error(`Export '${exportName}' not found in ${importPath}`);
+    }
+
+    // If it's a function (factory), call it with args
+    if (typeof exported === "function") {
+      const args = toolConfig.factoryArgs || {};
+      const result = exported(args);
+
+      // If the factory returns a Promise, await it
+      if (result && typeof result.then === "function") {
+        const agent = await result;
+        return { type: "agent", agent };
+      }
+      return { type: "agent", agent: result };
+    }
+
+    // If it's already an object/agent, wrap it in the correct format
+    return { type: "agent", agent: exported };
+  } catch (error) {
+    throw new Error(
+      `Failed to import agent from ${toolConfig.importPath}: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
+  }
+}
+
+async function convertToolsConfig(
   toolConfig: ToolsConfig,
   allAgents: AIAgent[]
-): any {
+): Promise<any> {
   if (toolConfig.prebuilt) {
     return mapPrebuiltServer(toolConfig.prebuilt);
   }
@@ -120,6 +164,10 @@ function convertToolsConfig(
     return { type: "agent", agent: referencedAgent };
   }
 
+  if (toolConfig.importPath) {
+    return await loadExternalAgent(toolConfig);
+  }
+
   throw new Error(`Invalid tool configuration: ${JSON.stringify(toolConfig)}`);
 }
 
@@ -129,8 +177,10 @@ async function createAgentFromConfig(
 ): Promise<AIAgent> {
   const model = createModel(agentConfig.model);
 
-  const toolsConfigs = agentConfig.toolsConfigs.map((toolConfig) =>
-    convertToolsConfig(toolConfig, allAgents)
+  const toolsConfigs = await Promise.all(
+    agentConfig.toolsConfigs.map((toolConfig) =>
+      convertToolsConfig(toolConfig, allAgents)
+    )
   );
 
   const agent = new AIAgent({
@@ -190,7 +240,12 @@ export const loadAgents = async (configPath?: string): Promise<AIAgent[]> => {
       if (!hasAgentRef) {
         const agent = await createAgentFromConfig(agentConfig, agents);
         agents.push(agent);
+        // Use both the config name and the actual agent name for lookups
         agentMap.set(agentConfig.name, agent);
+        const actualName = agent.getInfo()?.name;
+        if (actualName && actualName !== agentConfig.name) {
+          agentMap.set(actualName, agent);
+        }
       }
     }
 
@@ -202,7 +257,12 @@ export const loadAgents = async (configPath?: string): Promise<AIAgent[]> => {
       if (hasAgentRef) {
         const agent = await createAgentFromConfig(agentConfig, agents);
         agents.push(agent);
+        // Use both the config name and the actual agent name for lookups
         agentMap.set(agentConfig.name, agent);
+        const actualName = agent.getInfo()?.name;
+        if (actualName && actualName !== agentConfig.name) {
+          agentMap.set(actualName, agent);
+        }
       }
     }
 
@@ -219,13 +279,21 @@ export const toolResultsToMessage = (
 ) => {
   return toolResults
     .map((toolResult: TypedToolResult<ToolSet>) => {
+      // Handle both string output and object output formats
+      const text =
+        typeof toolResult.output === "string"
+          ? toolResult.output
+          : JSON.stringify(toolResult.output);
+      const displayText = text
+        ? `${text.slice(0, 200)}${text.length > 200 ? "..." : ""}`
+        : "No output";
+
       return (
         toolResult.toolName +
         "(" +
         JSON.stringify(toolResult.input) +
-        "): \n" +
-        toolResult.output?.content?.[0]?.text?.slice(0, 200) +
-        "..."
+        "): " +
+        displayText
       );
     })
     .join("\n\n");

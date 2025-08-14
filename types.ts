@@ -7,7 +7,7 @@ export interface MCPServerConfig {
 }
 
 export interface ToolsConfig {
-  type?: "tool" | "agent" | "mcpServers" | "prebuilt";
+  type?: "tool" | "agent" | "mcpServers" | "prebuilt" | "import";
 
   // For prebuilt servers (e.g., "sequentialThinking", "braveSearch")
   prebuilt?: string;
@@ -23,6 +23,11 @@ export interface ToolsConfig {
 
   // For agent references
   agentRef?: string; // Reference to another agent by name
+
+  // For importing external agents from files
+  importPath?: string; // Path to the TypeScript/JavaScript file
+  exportName?: string; // Name of the export (default: "default")
+  factoryArgs?: any; // Arguments to pass to the agent factory function
 }
 
 export interface ModelConfig {
