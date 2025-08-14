@@ -26,7 +26,24 @@ export interface ToolsConfig {
 }
 
 export interface ModelConfig {
-  provider: "openai" | "anthropic" | "google" | "mistral" | "groq";
+  provider:
+    | "openai"
+    | "anthropic"
+    | "google"
+    | "vertex"
+    | "bedrock"
+    | "azure"
+    | "cohere"
+    | "mistral"
+    | "fireworks"
+    | "groq"
+    | "perplexity"
+    | "togetherai"
+    | "xai"
+    | "deepseek"
+    | "cerebras"
+    | "deepinfra"
+    | "replicate";
   model: string;
   apiKey?: string; // Optional, can be from env
 }

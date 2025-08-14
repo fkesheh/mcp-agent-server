@@ -9,7 +9,7 @@ MCP Agent Server creates a bridge between MCP-compatible clients (like Claude De
 - Create and configure multiple specialized agents with different capabilities
 - Connect these agents to your MCP clients
 - Compose agents into master agents for complex workflows
-- Build AI applications with advanced capabilities through tools and MCP servers
+- Build AI applications with advanced capabilities MCP servers
 
 This project leverages the [mcp-ai-agent](https://github.com/fkesheh/mcp-ai-agent) framework to simplify agent creation and management.
 
@@ -19,7 +19,7 @@ This project leverages the [mcp-ai-agent](https://github.com/fkesheh/mcp-ai-agen
 - **Agent Composition**: Combine specialized agents into master agents
 - **Custom Tool Integration**: Create your own tools or use existing MCP servers
 - **Preconfigured Servers**: Easy access to popular MCP servers like Sequential Thinking, Brave Search, and Memory
-- **AI SDK Integration**: Support for multiple LLM providers including OpenAI, Anthropic, Google, Mistral, Groq and others through Vercel AI SDK
+- **AI SDK Integration**: Support for 17+ LLM providers including OpenAI, Anthropic, Google (Generative AI & Vertex), Amazon Bedrock, Azure, Cohere, Mistral, Fireworks, Groq, Perplexity, Together AI, xAI, DeepSeek, Cerebras, DeepInfra, and Replicate through Vercel AI SDK v5
 
 ## Prerequisites
 
@@ -158,8 +158,26 @@ Here's an example of a custom agents configuration:
 
 #### Model Configuration
 
-- **provider**: `"openai"` | `"anthropic"` | `"google"` | `"mistral"` | `"groq"`
-- **model**: The specific model name (e.g., `"gpt-4o-mini"`, `"claude-3-5-haiku-20241022"`)
+- **provider**: The AI provider to use. Supported providers include:
+  - `"openai"` - OpenAI models (GPT-4, GPT-4o, etc.)
+  - `"anthropic"` - Anthropic Claude models
+  - `"google"` - Google Generative AI (Gemini models)
+  - `"vertex"` - Google Vertex AI
+  - `"bedrock"` - Amazon Bedrock
+  - `"azure"` - Azure OpenAI Service
+  - `"cohere"` - Cohere models
+  - `"mistral"` - Mistral AI models
+  - `"fireworks"` - Fireworks AI
+  - `"groq"` - Groq (ultra-fast inference)
+  - `"perplexity"` - Perplexity AI
+  - `"togetherai"` - Together AI
+  - `"xai"` - xAI (Grok models)
+  - `"deepseek"` - DeepSeek models
+  - `"cerebras"` - Cerebras inference
+  - `"deepinfra"` - DeepInfra
+  - `"replicate"` - Replicate (open source models)
+- **model**: The specific model name (e.g., `"gpt-4o-mini"`, `"claude-3-5-haiku-20241022"`, `"gemini-2.0-flash-exp"`)
+- **apiKey**: (Optional) API key for the provider. Can also be set via environment variables
 
 #### Tools Configuration Types
 
@@ -278,65 +296,67 @@ The server comes with a default `agents-config.json` that includes:
 
 ### Example Agent Configuration
 
-```typescript
-// Creating a specialized agent
-const sequentialThinkingAgent = new AIAgent({
-  name: "Sequential Thinker",
-  description:
-    "Use this agent to think sequentially and resolve complex problems",
-  toolsConfigs: [
+```json
+{
+  "version": "1.0.0",
+  "agents": [
     {
-      mcpServers: {
-        sequentialThinking: {
-          command: "npx",
-          args: ["-y", "@modelcontextprotocol/server-sequential-thinking"],
-        },
+      "name": "Sequential Thinker",
+      "description": "Use this agent to think sequentially and resolve complex problems",
+      "model": {
+        "provider": "openai",
+        "model": "gpt-4o-mini"
       },
+      "toolsConfigs": [
+        {
+          "mcpServers": {
+            "sequentialThinking": {
+              "command": "npx",
+              "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+            }
+          }
+        }
+      ]
     },
-  ],
-  model: openai("gpt-4o-mini"),
-});
-
-// Creating a Claude-powered agent
-import { anthropic } from "@ai-sdk/anthropic";
-
-const claudeAgent = new AIAgent({
-  name: "Claude Assistant",
-  description: "A powerful AI assistant using Claude's capabilities",
-  toolsConfigs: [
     {
-      mcpServers: {
-        memory: {
-          command: "npx",
-          args: ["-y", "@modelcontextprotocol/server-memory"],
-        },
+      "name": "Claude Assistant",
+      "description": "A powerful AI assistant using Claude's capabilities",
+      "model": {
+        "provider": "anthropic",
+        "model": "claude-3-5-sonnet-20241022"
       },
-    },
-  ],
-  // Using Claude's latest Sonnet model
-  model: anthropic("claude-3-7-sonnet-20250219"),
-});
-
-// Creating a master agent that uses multiple specialized agents
-const masterAgent = new AIAgent({
-  name: "Master Agent",
-  description: "An agent that can manage other agents",
-  model: openai("gpt-4o-mini"),
-  toolsConfigs: [
-    {
-      type: "agent",
-      agent: sequentialThinkingAgent,
+      "toolsConfigs": [
+        {
+          "mcpServers": {
+            "memory": {
+              "command": "npx",
+              "args": ["-y", "@modelcontextprotocol/server-memory"]
+            }
+          }
+        }
+      ]
     },
     {
-      type: "agent",
-      agent: memoryAgent,
-    },
-    {
-      type: "agent",
-      agent: braveSearchAgent,
-    },
-  ],
-});
+      "name": "Master Agent",
+      "description": "An agent that can manage other agents",
+      "model": {
+        "provider": "openai",
+        "model": "gpt-4o-mini"
+      },
+      "toolsConfigs": [
+        {
+          "agentRef": "Sequential Thinker"
+        },
+        {
+          "agentRef": "Memory Agent"
+        },
+        {
+          "agentRef": "Brave Search Agent"
+        }
+      ]
+    }
+  ]
+}
 ```
 
 > **Note**: The mcp-ai-agent framework supports various AI models through the [AI SDK](https://sdk.vercel.ai/providers/ai-sdk-providers). You can use models from providers such as OpenAI, Anthropic, Google Generative AI, Mistral, Groq, and many others. Check the [AI SDK Providers documentation](https://sdk.vercel.ai/providers/ai-sdk-providers) for the complete list of supported models and their capabilities.
@@ -369,7 +389,12 @@ Edit your `claude_desktop_config.json`:
   "mcpServers": {
     "mcp-agent-server": {
       "command": "mcp-agent-server",
-      "args": ["--config", "/path/to/your/config.json"]
+      "args": ["--config", "/path/to/your/config.json"],
+      "env": {
+        "OPENAI_API_KEY": "your-openai-api-key",
+        "BRAVE_API_KEY": "your-brave-api-key",
+        "ANTHROPIC_API_KEY": "your-anthropic-api-key"
+      }
     }
   }
 }
@@ -386,7 +411,12 @@ Edit your `claude_desktop_config.json`:
         "/full/path/to/mcp-agent-server/dist/index.js",
         "--config",
         "/path/to/your/config.json"
-      ]
+      ],
+      "env": {
+        "OPENAI_API_KEY": "your-openai-api-key",
+        "BRAVE_API_KEY": "your-brave-api-key",
+        "ANTHROPIC_API_KEY": "your-anthropic-api-key"
+      }
     }
   }
 }
@@ -416,28 +446,55 @@ Once configured, your agents will appear as tools in your MCP client. For exampl
 
 ### Custom Tools
 
-You can create custom tools directly in your agent configuration:
+For custom functionality, you have several options:
 
-```typescript
-const calculatorAgent = new AIAgent({
-  name: "Calculator Agent",
-  description: "A calculator agent",
-  toolsConfigs: [
+1. **Use Prebuilt Servers** (recommended): Choose from available prebuilt servers like `sequentialThinking`, `memory`, `braveSearch`, `fetch`, etc.
+
+2. **Create Custom MCP Servers**: Build your own MCP server and integrate it:
+
+```json
+{
+  "name": "Calculator Agent",
+  "description": "A calculator agent with custom math operations",
+  "model": {
+    "provider": "openai",
+    "model": "gpt-4o-mini"
+  },
+  "toolsConfigs": [
     {
-      type: "tool",
-      name: "multiply",
-      description: "A tool for multiplying two numbers",
-      parameters: z.object({
-        number1: z.number(),
-        number2: z.number(),
-      }),
-      execute: async (args) => {
-        return args.number1 * args.number2;
-      },
+      "mcpServers": {
+        "calculator": {
+          "command": "node",
+          "args": ["/path/to/your/calculator-mcp-server.js"]
+        }
+      }
+    }
+  ]
+}
+```
+
+3. **Combine Multiple Prebuilt Servers**: Mix and match existing servers for complex functionality:
+
+```json
+{
+  "name": "Multi-Tool Agent",
+  "description": "An agent with multiple capabilities",
+  "model": {
+    "provider": "anthropic",
+    "model": "claude-3-5-haiku-20241022"
+  },
+  "toolsConfigs": [
+    {
+      "prebuilt": "sequentialThinking"
     },
-    // Add more tools...
-  ],
-});
+    {
+      "prebuilt": "memory"
+    },
+    {
+      "prebuilt": "fetch"
+    }
+  ]
+}
 ```
 
 ### Using MCP Servers

@@ -1,7 +1,22 @@
-import { ToolSet, TypedToolResult } from "ai";
+import { LanguageModel, ToolSet, TypedToolResult } from "ai";
 import { AIAgent, Servers } from "mcp-ai-agent";
 import { openai } from "@ai-sdk/openai";
 import { anthropic } from "@ai-sdk/anthropic";
+import { google } from "@ai-sdk/google";
+import { vertex } from "@ai-sdk/google-vertex";
+import { bedrock } from "@ai-sdk/amazon-bedrock";
+import { azure } from "@ai-sdk/azure";
+import { cohere } from "@ai-sdk/cohere";
+import { mistral } from "@ai-sdk/mistral";
+import { fireworks } from "@ai-sdk/fireworks";
+import { groq } from "@ai-sdk/groq";
+import { perplexity } from "@ai-sdk/perplexity";
+import { togetherai } from "@ai-sdk/togetherai";
+import { xai } from "@ai-sdk/xai";
+import { deepseek } from "@ai-sdk/deepseek";
+import { cerebras } from "@ai-sdk/cerebras";
+import { deepinfra } from "@ai-sdk/deepinfra";
+import { replicate } from "@ai-sdk/replicate";
 import { z } from "zod";
 import fs from "fs/promises";
 import path from "path";
@@ -17,12 +32,42 @@ export function toSnakeCase(str?: string) {
   return str.toLowerCase().replace(/ /g, "_");
 }
 
-function createModel(modelConfig: ModelConfig) {
+function createModel(modelConfig: ModelConfig): LanguageModel {
   switch (modelConfig.provider) {
     case "openai":
       return openai(modelConfig.model);
     case "anthropic":
       return anthropic(modelConfig.model);
+    case "google":
+      return google(modelConfig.model);
+    case "vertex":
+      return vertex(modelConfig.model);
+    case "bedrock":
+      return bedrock(modelConfig.model);
+    case "azure":
+      return azure(modelConfig.model);
+    case "cohere":
+      return cohere(modelConfig.model);
+    case "mistral":
+      return mistral(modelConfig.model);
+    case "fireworks":
+      return fireworks(modelConfig.model);
+    case "groq":
+      return groq(modelConfig.model);
+    case "perplexity":
+      return perplexity(modelConfig.model);
+    case "togetherai":
+      return togetherai(modelConfig.model);
+    case "xai":
+      return xai(modelConfig.model);
+    case "deepseek":
+      return deepseek(modelConfig.model);
+    case "cerebras":
+      return cerebras(modelConfig.model);
+    case "deepinfra":
+      return deepinfra(modelConfig.model);
+    case "replicate":
+      return replicate.languageModel(modelConfig.model);
     default:
       throw new Error(`Unsupported model provider: ${modelConfig.provider}`);
   }
