@@ -36,6 +36,7 @@
     "agents-config.json",
     "example-config.json",
     "example-selective-expose.json",
+    "example-import-config.json",
     "README.md",
     "LICENSE"
   ],
