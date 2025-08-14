@@ -588,31 +588,33 @@ You can test individual agents directly from the command line without connecting
 #### Using npx (Recommended)
 
 ```bash
-npx mcp-agent-server test-agent --name="Agent Name" --prompt="Your test prompt" --context="Optional context"
+npx mcp-agent-server test-agent --config="/path/to/config.json" --name="Agent Name" --prompt="Your test prompt" --context="Optional context"
 ```
 
 For example, to test the Brave Search Agent:
 
 ```bash
-npx mcp-agent-server test-agent --name="Brave Search" --prompt="What is the capital of France?" --context="I need geographical information"
+npx mcp-agent-server test-agent --config="./agents-config.json" --name="Brave Search" --prompt="What is the capital of France?" --context="I need geographical information"
 ```
 
 Or test the Master Agent which combines multiple specialized agents:
 
 ```bash
-npx mcp-agent-server test-agent --name="Master Agent" --prompt="Store this information: Claude is an AI assistant by Anthropic" --context="I need to test the memory capabilities"
+npx mcp-agent-server test-agent --config="./my-agents-config.json" --name="Master Agent" --prompt="Store this information: Claude is an AI assistant by Anthropic" --context="I need to test the memory capabilities"
 ```
+
+> **Note**: If no `--config` is specified, the server will look for `agents-config.json` or `my-agents-config.json` in the current directory.
 
 #### Using Local Development
 
 ```bash
-npm run test-agent -- --name="Agent Name" --prompt="Your test prompt" --context="Optional context"
+npm run test-agent -- --config="path/to/config.json" --name="Agent Name" --prompt="Your test prompt" --context="Optional context"
 ```
 
 Or run the command directly:
 
 ```bash
-node dist/cli.js test-agent --name="Sequential Thinker" --prompt="How would I approach solving a complex math problem?"
+node dist/cli.js test-agent --config="./agents-config.json" --name="Sequential Thinker" --prompt="How would I approach solving a complex math problem?"
 ```
 
 The test command will:
