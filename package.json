@@ -1,6 +1,6 @@
 {
   "name": "mcp-agent-server",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A Model Context Protocol (MCP) server that provides AI agents as tools for seamless integration with MCP clients",
   "keywords": [
     "mcp",
